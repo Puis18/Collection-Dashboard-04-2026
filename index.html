@@ -1,0 +1,854 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#0B1120">
+<title>Collection Dashboard — MO+EA</title>
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+:root {
+  --bg:       #0B1120;
+  --s1:       #111827;
+  --s2:       #1A2436;
+  --s3:       #243045;
+  --border:   #2A3A52;
+  --t1:       #F1F5F9;
+  --t2:       #94A3B8;
+  --t3:       #475569;
+  --mo:       #38BDF8;  /* sky blue */
+  --mo-dim:   rgba(56,189,248,.13);
+  --ea:       #A78BFA;  /* violet */
+  --ea-dim:   rgba(167,139,250,.13);
+  --green:    #34D399;
+  --green-d:  rgba(52,211,153,.12);
+  --red:      #F87171;
+  --red-d:    rgba(248,113,113,.12);
+  --amber:    #FBBF24;
+  --amber-d:  rgba(251,191,36,.12);
+  --orange:   #FB923C;
+  --navy:     #0EA5E9;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{background:var(--bg);color:var(--t1);font-family:'Sarabun',sans-serif;min-height:100dvh;overscroll-behavior:none}
+
+/* ── TOP BAR ── */
+.topbar{
+  position:sticky;top:0;z-index:100;
+  background:rgba(11,17,32,.92);
+  backdrop-filter:blur(12px);
+  -webkit-backdrop-filter:blur(12px);
+  border-bottom:1px solid var(--border);
+  padding:13px 16px 11px;
+  display:flex;justify-content:space-between;align-items:center;
+}
+.topbar-title{font-size:17px;font-weight:700;letter-spacing:-.3px}
+.topbar-title .mo{color:var(--mo)}.topbar-title .ea{color:var(--ea)}
+.topbar-sub{font-size:10px;color:var(--t3);margin-top:1px}
+.chip-date{
+  background:var(--s2);border:1px solid var(--border);border-radius:20px;
+  padding:5px 11px;font-size:10px;font-family:'IBM Plex Mono',monospace;color:var(--t2)
+}
+
+/* ── NAV ── */
+.nav{
+  display:flex;background:var(--s1);border-bottom:1px solid var(--border);
+  overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch
+}
+.nav::-webkit-scrollbar{display:none}
+.nbtn{
+  flex:1;min-width:72px;padding:11px 6px;border:none;background:transparent;
+  color:var(--t3);font-family:'Sarabun',sans-serif;font-size:12px;font-weight:500;
+  cursor:pointer;position:relative;transition:color .2s;white-space:nowrap
+}
+.nbtn.on{color:var(--t1)}
+.nbtn.on::after{
+  content:'';position:absolute;bottom:0;left:10px;right:10px;
+  height:2px;background:var(--t1);border-radius:2px 2px 0 0
+}
+
+/* ── BU TOGGLE ── */
+.bu-toggle{
+  display:flex;gap:6px;padding:14px 16px 0;
+}
+.bu-btn{
+  flex:1;padding:9px 4px;border-radius:10px;border:1.5px solid var(--border);
+  background:transparent;font-family:'Sarabun',sans-serif;font-size:13px;font-weight:600;
+  cursor:pointer;color:var(--t3);transition:all .2s;text-align:center
+}
+.bu-btn.mo-on{border-color:var(--mo);background:var(--mo-dim);color:var(--mo)}
+.bu-btn.ea-on{border-color:var(--ea);background:var(--ea-dim);color:var(--ea)}
+.bu-btn.both-on{border-color:var(--green);background:var(--green-d);color:var(--green)}
+
+/* ── PAGE ── */
+.page{display:none;padding:14px 16px 36px}
+.page.on{display:block}
+
+/* ── KPI GRID ── */
+.kpi-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}
+.kpi-grid.g3{grid-template-columns:1fr 1fr 1fr}
+.kpi{
+  background:var(--s1);border:1px solid var(--border);border-radius:13px;
+  padding:13px 14px;position:relative;overflow:hidden
+}
+.kpi::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;border-radius:13px 13px 0 0}
+.kpi.c-mo::before{background:var(--mo)}
+.kpi.c-ea::before{background:var(--ea)}
+.kpi.c-g::before{background:var(--green)}
+.kpi.c-r::before{background:var(--red)}
+.kpi.c-a::before{background:var(--amber)}
+.kpi.c-both::before{background:linear-gradient(90deg,var(--mo),var(--ea))}
+.kpi-lbl{font-size:10px;color:var(--t3);margin-bottom:5px;font-weight:500}
+.kpi-val{font-size:24px;font-weight:700;letter-spacing:-.8px;line-height:1}
+.kpi.c-mo .kpi-val{color:var(--mo)}
+.kpi.c-ea .kpi-val{color:var(--ea)}
+.kpi.c-g  .kpi-val{color:var(--green)}
+.kpi.c-r  .kpi-val{color:var(--red)}
+.kpi.c-a  .kpi-val{color:var(--amber)}
+.kpi.c-both .kpi-val{font-size:20px;color:var(--t1)}
+.kpi-sub{font-size:10px;color:var(--t3);margin-top:4px}
+.kpi-pct{
+  display:inline-block;font-size:10px;font-weight:700;font-family:'IBM Plex Mono',monospace;
+  padding:2px 7px;border-radius:20px;margin-top:4px
+}
+.kpi.c-mo .kpi-pct{background:var(--mo-dim);color:var(--mo)}
+.kpi.c-ea .kpi-pct{background:var(--ea-dim);color:var(--ea)}
+.kpi.c-g  .kpi-pct{background:var(--green-d);color:var(--green)}
+.kpi.c-r  .kpi-pct{background:var(--red-d);color:var(--red)}
+.kpi.c-a  .kpi-pct{background:var(--amber-d);color:var(--amber)}
+
+/* ── SECTION CARD ── */
+.card{
+  background:var(--s1);border:1px solid var(--border);border-radius:13px;
+  padding:15px;margin-bottom:12px;overflow:hidden
+}
+.card-hdr{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+.card-title{font-size:13px;font-weight:600;color:var(--t1)}
+.card-badge{
+  font-size:10px;font-family:'IBM Plex Mono',monospace;color:var(--t3);
+  background:var(--s2);padding:3px 9px;border-radius:20px
+}
+
+/* ── LEGEND ── */
+.legend{display:flex;flex-wrap:wrap;gap:7px;margin-bottom:10px}
+.legend-i{display:flex;align-items:center;gap:4px;font-size:11px;color:var(--t2)}
+.ld{width:8px;height:8px;border-radius:2px;flex-shrink:0}
+
+/* ── CHIPS SCROLL ── */
+.chips{display:flex;gap:7px;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch;padding-bottom:2px;margin-bottom:12px}
+.chips::-webkit-scrollbar{display:none}
+.chip{flex-shrink:0;background:var(--s2);border:1px solid var(--border);border-radius:18px;padding:7px 12px}
+.chip-lbl{font-size:10px;color:var(--t3)}
+.chip-val{font-size:13px;font-weight:700;font-family:'IBM Plex Mono',monospace}
+
+/* ── BAR ROW ── */
+.bar-row{margin-bottom:11px}
+.bar-meta{display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:4px}
+.bar-name{font-size:12px;color:var(--t2);flex:1;line-height:1.3}
+.bar-right{display:flex;flex-direction:column;align-items:flex-end;gap:2px;flex-shrink:0}
+.bar-track{height:5px;background:var(--s3);border-radius:4px;overflow:hidden}
+.bar-fill{height:100%;border-radius:4px}
+
+/* ── BADGE ── */
+.badge{display:inline-flex;align-items:center;justify-content:center;padding:2px 7px;border-radius:20px;font-size:10px;font-weight:700;font-family:'IBM Plex Mono',monospace}
+.b-r{background:var(--red-d);color:var(--red)}
+.b-a{background:var(--amber-d);color:var(--amber)}
+.b-g{background:var(--green-d);color:var(--green)}
+.b-mo{background:var(--mo-dim);color:var(--mo)}
+.b-ea{background:var(--ea-dim);color:var(--ea)}
+.b-gray{background:var(--s3);color:var(--t3)}
+
+/* ── COMPARE CARD ── */
+.cmp-row{margin-bottom:10px}
+.cmp-hdr{display:flex;justify-content:space-between;align-items:center;font-size:12px;margin-bottom:4px}
+.cmp-label{color:var(--t2)}
+.cmp-vals{display:flex;gap:6px}
+.cmp-bar-wrap{display:grid;grid-template-columns:1fr 1fr;gap:3px}
+
+/* ── TABLE ── */
+.tbl-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;margin:0 -15px;padding:0 15px}
+.dtbl{width:100%;border-collapse:collapse;font-size:11.5px;white-space:nowrap}
+.dtbl th{font-size:10px;font-weight:600;color:var(--t3);text-align:left;padding:6px 8px;border-bottom:1px solid var(--border);text-transform:uppercase;letter-spacing:.3px;background:var(--s1);position:sticky;top:0}
+.dtbl td{padding:7px 8px;border-bottom:1px solid var(--s2);color:var(--t1);vertical-align:middle}
+.dtbl tr:last-child td{border-bottom:none}
+.dtbl tr:active td{background:var(--s2)}
+.dtbl td.r{text-align:right;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--t2)}
+
+/* ── HIGHLIGHT ROW ── */
+.hl-card{
+  background:var(--s2);border-radius:11px;padding:12px 14px;margin-bottom:8px;
+  display:flex;justify-content:space-between;align-items:center;gap:10px
+}
+.hl-left .hl-name{font-size:13px;font-weight:600}
+.hl-left .hl-sub{font-size:11px;color:var(--t3);margin-top:2px}
+.hl-right{display:flex;flex-direction:column;align-items:flex-end;gap:3px}
+
+canvas{width:100%!important}
+.h180{height:180px;position:relative}
+.h200{height:200px;position:relative}
+.h220{height:220px;position:relative}
+</style>
+</head>
+<body>
+
+<!-- TOP BAR -->
+<div class="topbar">
+  <div>
+    <div class="topbar-title"><span class="mo">MO</span> + <span class="ea">EA</span> Dashboard</div>
+    <div class="topbar-sub">Collection Report · รวมทั้ง 2 ชีท</div>
+  </div>
+  <div class="chip-date">30.04.2569</div>
+</div>
+
+<!-- NAV -->
+<div class="nav">
+  <button class="nbtn on"  onclick="showPage('overview',this)">ภาพรวมรวม</button>
+  <button class="nbtn"     onclick="showPage('mo',this)">Data MO</button>
+  <button class="nbtn"     onclick="showPage('ea',this)">Data EA</button>
+  <button class="nbtn"     onclick="showPage('compare',this)">เปรียบเทียบ</button>
+  <button class="nbtn"     onclick="showPage('am',this)">แยก AM</button>
+  <button class="nbtn"     onclick="showPage('region',this)">แยก Region</button>
+</div>
+
+<!-- ══════════════════ OVERVIEW ══════════════════ -->
+<div class="page on" id="page-overview">
+
+  <div class="kpi-grid" style="margin-top:14px">
+    <div class="kpi c-both">
+      <div class="kpi-lbl">สัญญารวมทั้งหมด (MO+EA)</div>
+      <div class="kpi-val">113,825</div>
+      <div class="kpi-sub">MO 73,445 · EA 40,380</div>
+    </div>
+    <div class="kpi c-g">
+      <div class="kpi-lbl">Active รวม</div>
+      <div class="kpi-val">78,368</div>
+      <div class="kpi-sub">ไม่รวม Closed 35,457 ราย</div>
+    </div>
+    <div class="kpi c-r">
+      <div class="kpi-lbl">OD รวม (MO+EA)</div>
+      <div class="kpi-val">3,412</div>
+      <div class="kpi-pct">4.35%</div>
+    </div>
+    <div class="kpi c-a">
+      <div class="kpi-lbl">Finance รวม</div>
+      <div class="kpi-val">1,797M</div>
+      <div class="kpi-sub">MO 1,424M · EA 373M</div>
+    </div>
+  </div>
+
+  <div class="chips">
+    <div class="chip"><div class="chip-lbl">ยอดชำระรวม/เดือน</div><div class="chip-val" style="color:var(--green)">149.4M ฿</div></div>
+    <div class="chip"><div class="chip-lbl">MO ชำระ</div><div class="chip-val" style="color:var(--mo)">142.4M ฿</div></div>
+    <div class="chip"><div class="chip-lbl">EA ชำระ</div><div class="chip-val" style="color:var(--ea)">7.0M ฿</div></div>
+    <div class="chip"><div class="chip-lbl">NewOD รวม</div><div class="chip-val" style="color:var(--red)">393 ราย</div></div>
+    <div class="chip"><div class="chip-lbl">MO NewOD</div><div class="chip-val" style="color:var(--mo)">295</div></div>
+    <div class="chip"><div class="chip-lbl">EA NewOD</div><div class="chip-val" style="color:var(--ea)">98</div></div>
+  </div>
+
+  <div class="card">
+    <div class="card-hdr">
+      <div class="card-title">สัดส่วนสัญญา MO vs EA</div>
+    </div>
+    <div class="legend">
+      <div class="legend-i"><div class="ld" style="background:var(--mo)"></div>MO Total 73,445 (64.5%)</div>
+      <div class="legend-i"><div class="ld" style="background:var(--ea)"></div>EA Total 40,380 (35.5%)</div>
+    </div>
+    <div class="h180"><canvas id="buPieChart"></canvas></div>
+  </div>
+
+  <div class="card">
+    <div class="card-hdr">
+      <div class="card-title">สถานะบัญชีรวม MO+EA</div>
+      <div class="card-badge">Active 78,368</div>
+    </div>
+    <div class="legend">
+      <div class="legend-i"><div class="ld" style="background:#34D399"></div>Current 74,956</div>
+      <div class="legend-i"><div class="ld" style="background:#FBBF24"></div>OD1 619</div>
+      <div class="legend-i"><div class="ld" style="background:#FB923C"></div>OD2 456</div>
+      <div class="legend-i"><div class="ld" style="background:#F87171"></div>OD3 361</div>
+      <div class="legend-i"><div class="ld" style="background:#C04040"></div>NPL 1,976</div>
+    </div>
+    <div class="h200"><canvas id="statusCombined"></canvas></div>
+  </div>
+
+  <div class="card">
+    <div class="card-hdr">
+      <div class="card-title">สถานะการชำระ (Active)</div>
+    </div>
+    <div class="legend">
+      <div class="legend-i"><div class="ld" style="background:#34D399"></div>ชำระปกติ</div>
+      <div class="legend-i"><div class="ld" style="background:#38BDF8"></div>ชำระล่วงหน้า</div>
+      <div class="legend-i"><div class="ld" style="background:#F87171"></div>ชำระล่าช้า</div>
+    </div>
+    <div class="h200"><canvas id="payStatus"></canvas></div>
+  </div>
+
+</div>
+
+<!-- ══════════════════ DATA MO ══════════════════ -->
+<div class="page" id="page-mo">
+
+  <div class="kpi-grid" style="margin-top:14px">
+    <div class="kpi c-mo">
+      <div class="kpi-lbl">สัญญาทั้งหมด MO</div>
+      <div class="kpi-val">73,445</div>
+      <div class="kpi-sub">Active 70,572 ราย</div>
+    </div>
+    <div class="kpi c-g">
+      <div class="kpi-lbl">Current</div>
+      <div class="kpi-val">69,842</div>
+      <div class="kpi-pct">99.0%</div>
+    </div>
+    <div class="kpi c-r">
+      <div class="kpi-lbl">OD รวม MO</div>
+      <div class="kpi-val">730</div>
+      <div class="kpi-pct">1.03%</div>
+    </div>
+    <div class="kpi c-a">
+      <div class="kpi-lbl">ยอดชำระเดือนนี้</div>
+      <div class="kpi-val">142M</div>
+      <div class="kpi-sub">Finance 1,424M บาท</div>
+    </div>
+  </div>
+
+  <div class="chips">
+    <div class="chip"><div class="chip-lbl">OD1</div><div class="chip-val" style="color:var(--amber)">345</div></div>
+    <div class="chip"><div class="chip-lbl">OD2</div><div class="chip-val" style="color:var(--orange)">164</div></div>
+    <div class="chip"><div class="chip-lbl">OD3</div><div class="chip-val" style="color:var(--red)">100</div></div>
+    <div class="chip"><div class="chip-lbl">NPL</div><div class="chip-val" style="color:#C04040">121</div></div>
+    <div class="chip"><div class="chip-lbl">Closed</div><div class="chip-val" style="color:var(--t3)">2,873</div></div>
+    <div class="chip"><div class="chip-lbl">NewOD</div><div class="chip-val" style="color:var(--red)">295</div></div>
+    <div class="chip"><div class="chip-lbl">ชำระล่าช้า</div><div class="chip-val" style="color:var(--orange)">10,345</div></div>
+  </div>
+
+  <div class="card">
+    <div class="card-hdr">
+      <div class="card-title">สถานะบัญชี MO</div>
+      <div class="card-badge">Active 70,572</div>
+    </div>
+    <div class="legend">
+      <div class="legend-i"><div class="ld" style="background:#34D399"></div>Current 99.0%</div>
+      <div class="legend-i"><div class="ld" style="background:#FBBF24"></div>OD1 0.49%</div>
+      <div class="legend-i"><div class="ld" style="background:#FB923C"></div>OD2 0.23%</div>
+      <div class="legend-i"><div class="ld" style="background:#F87171"></div>OD3 0.14%</div>
+      <div class="legend-i"><div class="ld" style="background:#C04040"></div>NPL 0.17%</div>
+    </div>
+    <div class="h200"><canvas id="moStatus"></canvas></div>
+  </div>
+
+  <div class="card">
+    <div class="card-hdr"><div class="card-title">OD แต่ละ Bucket — MO</div></div>
+    <div class="h180"><canvas id="moOdBucket"></canvas></div>
+  </div>
+
+  <div class="card">
+    <div class="card-hdr"><div class="card-title">OD แต่ละ Region — MO</div></div>
+    <div id="moRegionBars"></div>
+  </div>
+
+</div>
+
+<!-- ══════════════════ DATA EA ══════════════════ -->
+<div class="page" id="page-ea">
+
+  <div class="kpi-grid" style="margin-top:14px">
+    <div class="kpi c-ea">
+      <div class="kpi-lbl">สัญญาทั้งหมด EA</div>
+      <div class="kpi-val">40,380</div>
+      <div class="kpi-sub">Active 7,796 | Closed 32,584</div>
+    </div>
+    <div class="kpi c-g">
+      <div class="kpi-lbl">Current (Active)</div>
+      <div class="kpi-val">5,114</div>
+      <div class="kpi-pct">65.6%</div>
+    </div>
+    <div class="kpi c-r">
+      <div class="kpi-lbl">OD รวม EA</div>
+      <div class="kpi-val">2,682</div>
+      <div class="kpi-pct">34.4%</div>
+    </div>
+    <div class="kpi c-a">
+      <div class="kpi-lbl">ยอดชำระเดือนนี้</div>
+      <div class="kpi-val">7.0M</div>
+      <div class="kpi-sub">Finance 373M บาท</div>
+    </div>
+  </div>
+
+  <div style="background:var(--red-d);border:1px solid rgba(248,113,113,.25);border-radius:11px;padding:12px 14px;margin-bottom:12px;display:flex;gap:10px;align-items:flex-start">
+    <div style="font-size:18px">⚠️</div>
+    <div>
+      <div style="font-size:12px;font-weight:600;color:var(--red);margin-bottom:2px">EA พอร์ตมีความเสี่ยงสูง</div>
+      <div style="font-size:11px;color:var(--t3)">Closed rate 80.7% · OD rate (active) สูงถึง 34.4% · NPL 1,855 ราย · AM4 มี OD สูง 91.8%</div>
+    </div>
+  </div>
+
+  <div class="chips">
+    <div class="chip"><div class="chip-lbl">OD1</div><div class="chip-val" style="color:var(--amber)">274</div></div>
+    <div class="chip"><div class="chip-lbl">OD2</div><div class="chip-val" style="color:var(--orange)">292</div></div>
+    <div class="chip"><div class="chip-lbl">OD3</div><div class="chip-val" style="color:var(--red)">261</div></div>
+    <div class="chip"><div class="chip-lbl">NPL</div><div class="chip-val" style="color:#C04040">1,855</div></div>
+    <div class="chip"><div class="chip-lbl">Closed</div><div class="chip-val" style="color:var(--t3)">32,584</div></div>
+    <div class="chip"><div class="chip-lbl">NewOD</div><div class="chip-val" style="color:var(--red)">98</div></div>
+  </div>
+
+  <div class="card">
+    <div class="card-hdr">
+      <div class="card-title">สถานะบัญชี EA (Active 7,796)</div>
+    </div>
+    <div class="legend">
+      <div class="legend-i"><div class="ld" style="background:#34D399"></div>Current 65.6%</div>
+      <div class="legend-i"><div class="ld" style="background:#FBBF24"></div>OD1 3.5%</div>
+      <div class="legend-i"><div class="ld" style="background:#FB923C"></div>OD2 3.7%</div>
+      <div class="legend-i"><div class="ld" style="background:#F87171"></div>OD3 3.3%</div>
+      <div class="legend-i"><div class="ld" style="background:#C04040"></div>NPL 23.8%</div>
+    </div>
+    <div class="h200"><canvas id="eaStatus"></canvas></div>
+  </div>
+
+  <div class="card">
+    <div class="card-hdr"><div class="card-title">OD Bucket — EA</div></div>
+    <div class="h180"><canvas id="eaOdBucket"></canvas></div>
+  </div>
+
+  <div class="card">
+    <div class="card-hdr"><div class="card-title">OD แต่ละ Region — EA</div></div>
+    <div id="eaRegionBars"></div>
+  </div>
+
+</div>
+
+<!-- ══════════════════ COMPARE ══════════════════ -->
+<div class="page" id="page-compare">
+
+  <div class="kpi-grid" style="margin-top:14px">
+    <div class="kpi c-mo">
+      <div class="kpi-lbl">MO — OD Rate</div>
+      <div class="kpi-val">1.03%</div>
+      <div class="kpi-pct">730 ราย</div>
+    </div>
+    <div class="kpi c-ea">
+      <div class="kpi-lbl">EA — OD Rate</div>
+      <div class="kpi-val">34.4%</div>
+      <div class="kpi-pct">2,682 ราย</div>
+    </div>
+    <div class="kpi c-mo">
+      <div class="kpi-lbl">MO — Collection Rate</div>
+      <div class="kpi-val">10.0%</div>
+      <div class="kpi-sub">ชำระ/Finance</div>
+    </div>
+    <div class="kpi c-ea">
+      <div class="kpi-lbl">EA — Collection Rate</div>
+      <div class="kpi-val">1.9%</div>
+      <div class="kpi-sub">ชำระ/Finance</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-hdr"><div class="card-title">เปรียบเทียบ OD Rate แต่ละ AM</div></div>
+    <div class="h220"><canvas id="amCompareChart"></canvas></div>
+    <div class="legend" style="margin-top:10px;justify-content:center">
+      <div class="legend-i"><div class="ld" style="background:var(--mo)"></div>MO</div>
+      <div class="legend-i"><div class="ld" style="background:var(--ea)"></div>EA</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-hdr"><div class="card-title">Finance & ยอดชำระเปรียบเทียบ</div></div>
+    <div class="h200"><canvas id="financeCompare"></canvas></div>
+    <div class="legend" style="margin-top:10px;justify-content:center">
+      <div class="legend-i"><div class="ld" style="background:var(--mo)"></div>MO</div>
+      <div class="legend-i"><div class="ld" style="background:var(--ea)"></div>EA</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-hdr"><div class="card-title">สรุปเปรียบเทียบ MO vs EA</div></div>
+    <table class="dtbl">
+      <thead><tr><th>ตัวชี้วัด</th><th style="text-align:right;color:var(--mo)">MO</th><th style="text-align:right;color:var(--ea)">EA</th></tr></thead>
+      <tbody>
+        <tr><td>สัญญาทั้งหมด</td><td class="r">73,445</td><td class="r">40,380</td></tr>
+        <tr><td>Active</td><td class="r">70,572</td><td class="r">7,796</td></tr>
+        <tr><td>Closed</td><td class="r">2,873</td><td class="r" style="color:var(--red)">32,584</td></tr>
+        <tr><td>Closed Rate</td><td class="r">3.9%</td><td class="r" style="color:var(--red)">80.7%</td></tr>
+        <tr><td>Current</td><td class="r">69,842</td><td class="r">5,114</td></tr>
+        <tr><td>OD รวม</td><td class="r">730</td><td class="r" style="color:var(--red)">2,682</td></tr>
+        <tr><td>OD Rate (Active)</td><td class="r" style="color:var(--green)">1.03%</td><td class="r" style="color:var(--red)">34.4%</td></tr>
+        <tr><td>NPL</td><td class="r">121</td><td class="r" style="color:var(--red)">1,855</td></tr>
+        <tr><td>Finance รวม</td><td class="r">1,424M</td><td class="r">373M</td></tr>
+        <tr><td>ยอดชำระ/เดือน</td><td class="r">142M</td><td class="r">7M</td></tr>
+        <tr><td>NewOD เดือนนี้</td><td class="r">295</td><td class="r">98</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ══════════════════ AM ══════════════════ -->
+<div class="page" id="page-am">
+
+  <div style="margin-top:14px;margin-bottom:12px;font-size:12px;color:var(--t3)">* แสดงเฉพาะ AM1–AM4 ที่เป็นกลุ่มหลัก</div>
+
+  <div class="card">
+    <div class="card-hdr"><div class="card-title">AM แยก MO vs EA — จำนวน Active</div></div>
+    <div class="h200"><canvas id="amActiveChart"></canvas></div>
+    <div class="legend" style="margin-top:10px;justify-content:center">
+      <div class="legend-i"><div class="ld" style="background:var(--mo)"></div>MO Active</div>
+      <div class="legend-i"><div class="ld" style="background:var(--ea)"></div>EA Active</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-hdr"><div class="card-title">AM — OD Detail MO</div></div>
+    <div id="moAmRows"></div>
+  </div>
+
+  <div class="card">
+    <div class="card-hdr"><div class="card-title">AM — OD Detail EA</div></div>
+    <div id="eaAmRows"></div>
+  </div>
+
+</div>
+
+<!-- ══════════════════ REGION ══════════════════ -->
+<div class="page" id="page-region">
+
+  <div style="margin-top:14px;margin-bottom:12px;">
+    <div class="card">
+      <div class="card-hdr"><div class="card-title">OD แต่ละ Region — MO+EA รวม</div></div>
+      <div class="h220"><canvas id="regionCombined"></canvas></div>
+      <div class="legend" style="margin-top:10px;justify-content:center">
+        <div class="legend-i"><div class="ld" style="background:var(--mo)"></div>MO OD</div>
+        <div class="legend-i"><div class="ld" style="background:var(--ea)"></div>EA OD</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-hdr"><div class="card-title">ยอดชำระ แต่ละ Region</div></div>
+    <div class="h200"><canvas id="regionCollected"></canvas></div>
+    <div class="legend" style="margin-top:10px;justify-content:center">
+      <div class="legend-i"><div class="ld" style="background:var(--mo)"></div>MO</div>
+      <div class="legend-i"><div class="ld" style="background:var(--ea)"></div>EA</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-hdr"><div class="card-title">ตารางสรุป Region</div></div>
+    <div class="tbl-wrap">
+      <table class="dtbl">
+        <thead>
+          <tr>
+            <th>Region</th>
+            <th style="text-align:right">MO Active</th>
+            <th style="text-align:right;color:var(--mo)">MO OD%</th>
+            <th style="text-align:right">EA Active</th>
+            <th style="text-align:right;color:var(--ea)">EA OD%</th>
+          </tr>
+        </thead>
+        <tbody id="regionTable"></tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ─── SHARED DATA ───────────────────────────────────────────
+const moData = {
+  total:73445, active:70572, closed:2873,
+  current:69842, od1:345, od2:164, od3:100, npl:121, od:730,
+  finance:1424.10, collected:142.41, outstanding:1739.08,
+  payNormal:35721, payAdv:24506, payLate:10345, newOD:295,
+  byAM:{
+    AM1:{total:11010,active:10303,od:97,finance:211.82,collected:21.11},
+    AM2:{total:10939,active:10496,od:73,finance:213.54,collected:20.01},
+    AM3:{total:9940, active:9441, od:58,finance:186.76,collected:17.38},
+    AM4:{total:4947, active:4836, od:79,finance:106.86,collected:10.52},
+  },
+  byRegion:{
+    EAST:     {total:13581,active:13144,od:185,collected:29.71},
+    SOUTH:    {total:14651,active:14040,od:95, collected:25.90},
+    BKK:      {total:11970,active:11633,od:182,collected:25.57},
+    NORTHEAST:{total:12562,active:11973,od:108,collected:23.31},
+    CENTRAL:  {total:9245, active:8880, od:73, collected:17.33},
+    NORTH:    {total:7620, active:7185, od:53, collected:13.97},
+    WEST:     {total:783,  active:758,  od:13, collected:1.47},
+  }
+};
+const eaData = {
+  total:40380, active:7796, closed:32584,
+  current:5114, od1:274, od2:292, od3:261, npl:1855, od:2682,
+  finance:373.49, collected:6.98, outstanding:59.38,
+  payNormal:1247, payAdv:3808, payLate:2741, newOD:98,
+  byAM:{
+    AM1:{total:16605,active:3128,od:908, finance:155.05,collected:3.28},
+    AM2:{total:12578,active:2113,od:717, finance:118.39,collected:1.84},
+    AM3:{total:8889, active:2068,od:630, finance:76.08, collected:1.74},
+    AM4:{total:2278, active:461, od:423, finance:23.54, collected:0.08},
+  },
+  byRegion:{
+    EAST:     {total:5815, active:1354,od:403,collected:1.44},
+    SOUTH:    {total:8891, active:2070,od:630,collected:1.75},
+    BKK:      {total:2289, active:470, od:426,collected:0.10},
+    NORTHEAST:{total:8912, active:1351,od:444,collected:1.29},
+    CENTRAL:  {total:8141, active:1301,od:407,collected:1.19},
+    NORTH:    {total:6327, active:1245,od:371,collected:1.20},
+    WEST:     {total:0,    active:0,   od:0,  collected:0},
+  }
+};
+const regions = ['EAST','SOUTH','BKK','NORTHEAST','CENTRAL','NORTH','WEST'];
+
+// ─── CHART DEFAULTS ───────────────────────────────────────
+Chart.defaults.color = '#94A3B8';
+Chart.defaults.font.family = "'Sarabun', sans-serif";
+const gridColor = '#1A2436';
+
+function doughnut(id, data, colors){
+  new Chart(document.getElementById(id),{
+    type:'doughnut',
+    data:{labels:data.map(d=>d.l), datasets:[{data:data.map(d=>d.v), backgroundColor:colors, borderWidth:0, hoverOffset:4}]},
+    options:{responsive:true,maintainAspectRatio:false,cutout:'66%',plugins:{legend:{display:false}}}
+  });
+}
+function hbar(id, labels, datasets){
+  new Chart(document.getElementById(id),{
+    type:'bar', data:{labels, datasets},
+    options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false}},
+      scales:{x:{grid:{color:gridColor},ticks:{font:{size:10}}},y:{grid:{display:false},ticks:{font:{size:10}}}}
+    }
+  });
+}
+function vbar(id, labels, datasets){
+  new Chart(document.getElementById(id),{
+    type:'bar', data:{labels, datasets},
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false}},
+      scales:{x:{grid:{display:false},ticks:{font:{size:10}}},y:{grid:{color:gridColor},ticks:{font:{size:10}}}}
+    }
+  });
+}
+function grouped(id, labels, datasets){
+  new Chart(document.getElementById(id),{
+    type:'bar', data:{labels, datasets:{...datasets}},
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false}},
+      scales:{x:{grid:{display:false},ticks:{font:{size:10}}},y:{grid:{color:gridColor},ticks:{font:{size:10}}}}
+    }
+  });
+}
+
+// ─── OVERVIEW CHARTS ─────────────────────────────────────
+doughnut('buPieChart',
+  [{l:'MO',v:73445},{l:'EA',v:40380}],
+  ['#38BDF8','#A78BFA']);
+
+doughnut('statusCombined',
+  [{l:'Current',v:74956},{l:'OD1',v:619},{l:'OD2',v:456},{l:'OD3',v:361},{l:'NPL',v:1976}],
+  ['#34D399','#FBBF24','#FB923C','#F87171','#C04040']);
+
+new Chart(document.getElementById('payStatus'),{
+  type:'bar',
+  data:{
+    labels:['ชำระปกติ','ชำระล่วงหน้า','ชำระล่าช้า'],
+    datasets:[
+      {label:'MO', data:[35721,24506,10345], backgroundColor:'#38BDF8', borderRadius:5, borderWidth:0},
+      {label:'EA', data:[1247,3808,2741],    backgroundColor:'#A78BFA', borderRadius:5, borderWidth:0},
+    ]
+  },
+  options:{responsive:true,maintainAspectRatio:false,
+    plugins:{legend:{display:false}},
+    scales:{x:{grid:{display:false},ticks:{font:{size:11}}},y:{grid:{color:gridColor},ticks:{font:{size:10},callback:v=>v>=1000?Math.round(v/1000)+'k':v}}}
+  }
+});
+
+// ─── MO CHARTS ───────────────────────────────────────────
+doughnut('moStatus',
+  [{l:'Current',v:69842},{l:'OD1',v:345},{l:'OD2',v:164},{l:'OD3',v:100},{l:'NPL',v:121}],
+  ['#34D399','#FBBF24','#FB923C','#F87171','#C04040']);
+
+vbar('moOdBucket',
+  ['OD1\n1-30 วัน','OD2\n31-60 วัน','OD3\n61-90 วัน','NPL\n>90 วัน'],
+  [{data:[345,164,100,121], backgroundColor:['#FBBF24','#FB923C','#F87171','#C04040'], borderRadius:5, borderWidth:0}]);
+
+const moRegEl = document.getElementById('moRegionBars');
+const maxMoR = Math.max(...regions.map(r=>moData.byRegion[r]?.od||0));
+regions.forEach(r => {
+  const d = moData.byRegion[r]; if(!d||d.active===0) return;
+  const odPct = (d.od/d.active*100).toFixed(2);
+  const pct = Math.round(d.od/maxMoR*100);
+  const cls = d.od>=150?'b-r':d.od>=80?'b-a':'b-g';
+  moRegEl.innerHTML += `
+  <div class="bar-row">
+    <div class="bar-meta">
+      <div class="bar-name">${r}</div>
+      <div class="bar-right">
+        <span style="font-size:10px;color:var(--t3);font-family:'IBM Plex Mono',monospace">${d.active.toLocaleString()} active</span>
+        <span class="badge ${cls}">OD ${d.od} (${odPct}%)</span>
+      </div>
+    </div>
+    <div class="bar-track"><div class="bar-fill" style="width:${pct}%;background:var(--mo)"></div></div>
+  </div>`;
+});
+
+// ─── EA CHARTS ───────────────────────────────────────────
+doughnut('eaStatus',
+  [{l:'Current',v:5114},{l:'OD1',v:274},{l:'OD2',v:292},{l:'OD3',v:261},{l:'NPL',v:1855}],
+  ['#34D399','#FBBF24','#FB923C','#F87171','#C04040']);
+
+vbar('eaOdBucket',
+  ['OD1\n1-30 วัน','OD2\n31-60 วัน','OD3\n61-90 วัน','NPL\n>90 วัน'],
+  [{data:[274,292,261,1855], backgroundColor:['#FBBF24','#FB923C','#F87171','#C04040'], borderRadius:5, borderWidth:0}]);
+
+const eaRegEl = document.getElementById('eaRegionBars');
+const maxEaR = Math.max(...regions.map(r=>eaData.byRegion[r]?.od||0));
+regions.filter(r=>r!=='WEST').forEach(r => {
+  const d = eaData.byRegion[r]; if(!d||d.active===0) return;
+  const odPct = (d.od/d.active*100).toFixed(1);
+  const pct = Math.round(d.od/maxEaR*100);
+  eaRegEl.innerHTML += `
+  <div class="bar-row">
+    <div class="bar-meta">
+      <div class="bar-name">${r}</div>
+      <div class="bar-right">
+        <span style="font-size:10px;color:var(--t3);font-family:'IBM Plex Mono',monospace">${d.active.toLocaleString()} active</span>
+        <span class="badge b-r">OD ${d.od} (${odPct}%)</span>
+      </div>
+    </div>
+    <div class="bar-track"><div class="bar-fill" style="width:${pct}%;background:var(--ea)"></div></div>
+  </div>`;
+});
+
+// ─── COMPARE CHARTS ──────────────────────────────────────
+new Chart(document.getElementById('amCompareChart'),{
+  type:'bar',
+  data:{
+    labels:['AM1','AM2','AM3','AM4'],
+    datasets:[
+      {label:'MO', data:[0.94,0.70,0.61,1.63], backgroundColor:'#38BDF8', borderRadius:4, borderWidth:0},
+      {label:'EA', data:[29.0,33.9,30.5,91.8], backgroundColor:'#A78BFA', borderRadius:4, borderWidth:0},
+    ]
+  },
+  options:{responsive:true,maintainAspectRatio:false,
+    plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>` ${c.dataset.label}: ${c.parsed.y.toFixed(1)}%`}}},
+    scales:{x:{grid:{display:false},ticks:{font:{size:12}}},y:{grid:{color:gridColor},ticks:{font:{size:10},callback:v=>v+'%'}}}
+  }
+});
+
+new Chart(document.getElementById('financeCompare'),{
+  type:'bar',
+  data:{
+    labels:['AM1','AM2','AM3','AM4'],
+    datasets:[
+      {label:'MO Finance', data:[211.82,213.54,186.76,106.86], backgroundColor:'rgba(56,189,248,.7)', borderRadius:4, borderWidth:0},
+      {label:'EA Finance', data:[155.05,118.39,76.08,23.54],   backgroundColor:'rgba(167,139,250,.7)', borderRadius:4, borderWidth:0},
+      {label:'MO Collected', data:[21.11,20.01,17.38,10.52],   backgroundColor:'#38BDF8', borderRadius:4, borderWidth:0},
+      {label:'EA Collected', data:[3.28,1.84,1.74,0.08],       backgroundColor:'#A78BFA', borderRadius:4, borderWidth:0},
+    ]
+  },
+  options:{responsive:true,maintainAspectRatio:false,
+    plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>` ${c.dataset.label}: ${c.parsed.y.toFixed(1)}M`}}},
+    scales:{x:{grid:{display:false},ticks:{font:{size:11}}},y:{grid:{color:gridColor},ticks:{font:{size:10},callback:v=>v+'M'}}}
+  }
+});
+
+// ─── AM CHARTS ───────────────────────────────────────────
+new Chart(document.getElementById('amActiveChart'),{
+  type:'bar',
+  data:{
+    labels:['AM1','AM2','AM3','AM4'],
+    datasets:[
+      {label:'MO', data:[10303,10496,9441,4836], backgroundColor:'#38BDF8', borderRadius:4, borderWidth:0},
+      {label:'EA', data:[3128,2113,2068,461],    backgroundColor:'#A78BFA', borderRadius:4, borderWidth:0},
+    ]
+  },
+  options:{responsive:true,maintainAspectRatio:false,
+    plugins:{legend:{display:false}},
+    scales:{x:{grid:{display:false},ticks:{font:{size:12}}},y:{grid:{color:gridColor},ticks:{font:{size:10},callback:v=>v>=1000?Math.round(v/1000)+'k':v}}}
+  }
+});
+
+['MO','EA'].forEach(bu => {
+  const data = bu==='MO'?moData:eaData;
+  const color = bu==='MO'?'var(--mo)':'var(--ea)';
+  const el = document.getElementById(`${bu.toLowerCase()}AmRows`);
+  ['AM1','AM2','AM3','AM4'].forEach(am=>{
+    const d = data.byAM[am];
+    const odPct = (d.od/d.active*100).toFixed(2);
+    const cls = parseFloat(odPct)>=30?'b-r':parseFloat(odPct)>=5?'b-a':'b-g';
+    el.innerHTML += `
+    <div class="hl-card">
+      <div class="hl-left">
+        <div class="hl-name">${am}</div>
+        <div class="hl-sub">Active ${d.active.toLocaleString()} · Finance ${d.finance.toFixed(1)}M</div>
+      </div>
+      <div class="hl-right">
+        <span class="badge ${cls}">OD ${d.od}</span>
+        <span style="font-size:10px;color:var(--t3)">${odPct}%</span>
+        <span style="font-size:10px;color:var(--t3)">ชำระ ${d.collected.toFixed(1)}M</span>
+      </div>
+    </div>`;
+  });
+});
+
+// ─── REGION CHARTS ───────────────────────────────────────
+new Chart(document.getElementById('regionCombined'),{
+  type:'bar',
+  data:{
+    labels: regions.filter(r=>r!=='WEST'),
+    datasets:[
+      {label:'MO OD', data:regions.filter(r=>r!=='WEST').map(r=>moData.byRegion[r]?.od||0), backgroundColor:'#38BDF8', borderRadius:4, borderWidth:0},
+      {label:'EA OD', data:regions.filter(r=>r!=='WEST').map(r=>eaData.byRegion[r]?.od||0), backgroundColor:'#A78BFA', borderRadius:4, borderWidth:0},
+    ]
+  },
+  options:{responsive:true,maintainAspectRatio:false,
+    plugins:{legend:{display:false}},
+    scales:{x:{grid:{display:false},ticks:{font:{size:10}}},y:{grid:{color:gridColor},ticks:{font:{size:10}}}}
+  }
+});
+
+new Chart(document.getElementById('regionCollected'),{
+  type:'bar',
+  data:{
+    labels: regions.filter(r=>r!=='WEST'),
+    datasets:[
+      {label:'MO', data:regions.filter(r=>r!=='WEST').map(r=>moData.byRegion[r]?.collected||0), backgroundColor:'#38BDF8', borderRadius:4, borderWidth:0},
+      {label:'EA', data:regions.filter(r=>r!=='WEST').map(r=>eaData.byRegion[r]?.collected||0), backgroundColor:'#A78BFA', borderRadius:4, borderWidth:0},
+    ]
+  },
+  options:{responsive:true,maintainAspectRatio:false,
+    plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>` ${c.dataset.label}: ${c.parsed.y.toFixed(1)}M`}}},
+    scales:{x:{grid:{display:false},ticks:{font:{size:10}}},y:{grid:{color:gridColor},ticks:{font:{size:10},callback:v=>v+'M'}}}
+  }
+});
+
+const regTbl = document.getElementById('regionTable');
+regions.forEach(r=>{
+  const mo = moData.byRegion[r]; const ea = eaData.byRegion[r];
+  if(!mo||mo.active===0) return;
+  const moOdPct = (mo.od/mo.active*100).toFixed(2);
+  const eaOdPct = ea&&ea.active>0?(ea.od/ea.active*100).toFixed(1):'—';
+  const moCls = parseFloat(moOdPct)>=2?'b-r':parseFloat(moOdPct)>=1?'b-a':'b-g';
+  const eaCls = ea&&ea.active>0?(parseFloat(eaOdPct)>=40?'b-r':'b-a'):'b-gray';
+  regTbl.innerHTML += `<tr>
+    <td>${r}</td>
+    <td class="r">${mo.active.toLocaleString()}</td>
+    <td class="r"><span class="badge ${moCls}">${moOdPct}%</span></td>
+    <td class="r">${ea&&ea.active>0?ea.active.toLocaleString():'—'}</td>
+    <td class="r"><span class="badge ${eaCls}">${eaOdPct}${eaOdPct!=='—'?'%':''}</span></td>
+  </tr>`;
+});
+
+// ─── NAV ─────────────────────────────────────────────────
+function showPage(id, btn){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('on'));
+  document.querySelectorAll('.nbtn').forEach(b=>b.classList.remove('on'));
+  document.getElementById('page-'+id).classList.add('on');
+  btn.classList.add('on');
+  btn.scrollIntoView({behavior:'smooth',block:'nearest',inline:'center'});
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+</script>
+</body>
+</html>

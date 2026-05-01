@@ -457,99 +457,13 @@ function renderTeams(){
   const el=document.getElementById('team-list');
   document.getElementById('team-count').textContent=`แสดง ${data.length} ทีม`;
   if(data.length===0){el.innerHTML='<div style="text-align:center;color:var(--t3);padding:24px 0">ไม่พบทีม</div>';return}
-
-  // ── AM Summary ──────────────────────────────────────────────
-  // Group by AM from filtered data (before search filter for accurate totals)
-  const amData = sorted(filtered());
-  const amGroups = {};
-  amData.forEach(r => {
-    const key = r.am;
-    if(!amGroups[key]) amGroups[key] = {am:key, total:0, active:0, current:0, od:0, od1:0, od2:0, od3:0, npl:0, new_od:0, finance:0, collected:0};
-    const g = amGroups[key];
-    const a = active(r);
-    g.total += r.total;
-    g.active += a;
-    g.current += r.current;
-    g.od += r.od;
-    g.od1 += r.od1;
-    g.od2 += r.od2;
-    g.od3 += r.od3;
-    g.npl += r.npl;
-    g.new_od += r.new_od;
-    g.finance += r.finance;
-    g.collected += r.collected;
-  });
-
-  const amList = Object.values(amGroups).sort((a,b) => a.am.localeCompare(b.am));
-  const showAM = amList.length > 0;
-
-  let amHTML = '';
-  if(showAM){
-    // grand total row
-    const grand = amList.reduce((acc,g) => {
-      acc.total+=g.total; acc.active+=g.active; acc.current+=g.current;
-      acc.od+=g.od; acc.od1+=g.od1; acc.od2+=g.od2; acc.od3+=g.od3;
-      acc.npl+=g.npl; acc.new_od+=g.new_od; acc.finance+=g.finance; acc.collected+=g.collected;
-      return acc;
-    }, {total:0,active:0,current:0,od:0,od1:0,od2:0,od3:0,npl:0,new_od:0,finance:0,collected:0});
-
-    amHTML = `<div style="background:var(--s1);border:1px solid var(--border);border-radius:13px;padding:14px;margin-bottom:12px">
-      <div style="font-size:13px;font-weight:600;color:var(--t1);margin-bottom:10px">ยอดรวมแต่ละ AM</div>
-      <div style="overflow-x:auto;-webkit-overflow-scrolling:touch;margin:0 -2px">
-      <table style="width:100%;border-collapse:collapse;font-size:11px;white-space:nowrap;min-width:520px">
-        <thead>
-          <tr style="border-bottom:1.5px solid var(--border)">
-            <th style="text-align:left;padding:5px 8px;font-size:10px;color:var(--t3);font-weight:600;text-transform:uppercase">AM</th>
-            <th style="text-align:right;padding:5px 8px;font-size:10px;color:var(--t3);font-weight:600;text-transform:uppercase">สัญญา</th>
-            <th style="text-align:right;padding:5px 8px;font-size:10px;color:var(--t3);font-weight:600;text-transform:uppercase">Active</th>
-            <th style="text-align:right;padding:5px 8px;font-size:10px;color:var(--green);font-weight:600;text-transform:uppercase">Current(%)</th>
-            <th style="text-align:right;padding:5px 8px;font-size:10px;color:var(--red);font-weight:600;text-transform:uppercase">OD(%)</th>
-            <th style="text-align:right;padding:5px 8px;font-size:10px;color:var(--amber);font-weight:600;text-transform:uppercase">NewOD</th>
-            <th style="text-align:right;padding:5px 8px;font-size:10px;color:var(--t3);font-weight:600;text-transform:uppercase">Finance</th>
-            <th style="text-align:right;padding:5px 8px;font-size:10px;color:var(--t3);font-weight:600;text-transform:uppercase">ชำระ/ด.</th>
-          </tr>
-        </thead>
-        <tbody>
-          ${amList.map(g => {
-            const curPct = g.active>0?(g.current/g.active*100).toFixed(1):0;
-            const odPct  = g.active>0?(g.od/g.active*100).toFixed(1):0;
-            const odCls  = parseFloat(odPct)>=10?'var(--red)':parseFloat(odPct)>=2?'var(--amber)':'var(--green)';
-            const newOdCls = g.new_od>=10?'br':g.new_od>=3?'ba':g.new_od>0?'ba':'bg';
-            return `<tr style="border-bottom:1px solid var(--s3)">
-              <td style="padding:7px 8px;font-weight:700;color:var(--t1)">${g.am}</td>
-              <td style="padding:7px 8px;text-align:right;font-family:'IBM Plex Mono',monospace;color:var(--t2)">${g.total.toLocaleString()}</td>
-              <td style="padding:7px 8px;text-align:right;font-family:'IBM Plex Mono',monospace;color:var(--mo)">${g.active.toLocaleString()}</td>
-              <td style="padding:7px 8px;text-align:right;font-family:'IBM Plex Mono',monospace;color:var(--green)">${g.current.toLocaleString()} <span style="font-size:10px">(${curPct}%)</span></td>
-              <td style="padding:7px 8px;text-align:right;font-family:'IBM Plex Mono',monospace;color:${odCls}">${g.od} <span style="font-size:10px">(${odPct}%)</span></td>
-              <td style="padding:7px 8px;text-align:right"><span class="badge ${newOdCls}">${g.new_od}</span></td>
-              <td style="padding:7px 8px;text-align:right;font-family:'IBM Plex Mono',monospace;color:var(--t2)">${g.finance.toFixed(1)}M</td>
-              <td style="padding:7px 8px;text-align:right;font-family:'IBM Plex Mono',monospace;color:var(--green)">${g.collected.toFixed(2)}M</td>
-            </tr>`;
-          }).join('')}
-          <!-- Grand Total Row -->
-          <tr style="border-top:2px solid var(--border);background:var(--s3)">
-            <td style="padding:7px 8px;font-weight:700;color:var(--t1)">รวม</td>
-            <td style="padding:7px 8px;text-align:right;font-family:'IBM Plex Mono',monospace;font-weight:700;color:var(--t1)">${grand.total.toLocaleString()}</td>
-            <td style="padding:7px 8px;text-align:right;font-family:'IBM Plex Mono',monospace;font-weight:700;color:var(--mo)">${grand.active.toLocaleString()}</td>
-            <td style="padding:7px 8px;text-align:right;font-family:'IBM Plex Mono',monospace;font-weight:700;color:var(--green)">${grand.current.toLocaleString()} <span style="font-size:10px">(${grand.active>0?(grand.current/grand.active*100).toFixed(1):0}%)</span></td>
-            <td style="padding:7px 8px;text-align:right;font-family:'IBM Plex Mono',monospace;font-weight:700;color:var(--red)">${grand.od} <span style="font-size:10px">(${grand.active>0?(grand.od/grand.active*100).toFixed(1):0}%)</span></td>
-            <td style="padding:7px 8px;text-align:right"><span class="badge br">${grand.new_od}</span></td>
-            <td style="padding:7px 8px;text-align:right;font-family:'IBM Plex Mono',monospace;font-weight:700;color:var(--t1)">${grand.finance.toFixed(1)}M</td>
-            <td style="padding:7px 8px;text-align:right;font-family:'IBM Plex Mono',monospace;font-weight:700;color:var(--green)">${grand.collected.toFixed(2)}M</td>
-          </tr>
-        </tbody>
-      </table>
-      </div>
-    </div>`;
-  }
-  el.innerHTML = amHTML + data.map(r=>{
+  el.innerHTML=data.map(r=>{
     const a=active(r);
     const odr=a>0?(r.od/a*100).toFixed(1):'0.0';
     const cls=r.bu==='MO'?'mo-c':'ea-c';
     const odTotalCls=r.od>=50?'br':r.od>=10?'ba':r.od>0?'ba':'bg';
     const buB=r.bu==='MO'?'bmo':'bea';
     const closedPct=r.total>0?(r.closed/r.total*100).toFixed(0):0;
-    const currentPct=a>0?(r.current/a*100).toFixed(1):0;
     const newOdCls=r.new_od>=10?'br':r.new_od>=3?'ba':r.new_od>0?'ba':'bg';
     // OD bar segments (visual mini bar)
     const odTotal=r.od1+r.od2+r.od3+r.npl;
@@ -568,7 +482,7 @@ function renderTeams(){
       <div class="team-stats" style="margin-bottom:6px">
         <div class="ts-item"><div class="ts-l">สัญญาทั้งหมด</div><div class="ts-v" style="color:var(--t1)">${r.total.toLocaleString()}</div></div>
         <div class="ts-item"><div class="ts-l">Active</div><div class="ts-v" style="color:${r.bu==='MO'?'var(--mo)':'var(--ea)'}">${a.toLocaleString()}</div></div>
-        <div class="ts-item"><div class="ts-l">Current (${currentPct}%)</div><div class="ts-v" style="color:var(--green)">${r.current.toLocaleString()}</div></div>
+        <div class="ts-item"><div class="ts-l">Closed (${closedPct}%)</div><div class="ts-v" style="color:var(--t3)">${r.closed.toLocaleString()}</div></div>
       </div>
 
       <!-- Row 2: OD รวม / OD Rate / New OD -->
